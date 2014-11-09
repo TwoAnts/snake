@@ -1,4 +1,4 @@
-#-*- coding: UTF-8 -*
+#-*- coding: UTF-8 -*-
 from random import randint
 HEIGHT = 600
 WIDTH = 600
@@ -45,7 +45,7 @@ class SnakeGame:
         rangex = (self.width / 10 * 3 - 1, self.width / 10 * 7 - 1)
         rangey = (self.height / 10 * 3 - 1, self.height / 10 * 7 - 1)
         if rangey[1] + 1 >= self.height or  rangey[1] - 1 < 0:
-            raise RuntimeError("the heigth is too small!",
+            raise RuntimeError("the height is too small!",
                                "in __init_snake_bogy__")
         snakehead = (randint(rangex[0], rangex[1]),
                             randint(rangey[0], rangey[1]))
@@ -287,16 +287,12 @@ def keyHandler(event):
         elif state == "play":
             if keycode == 37: #left
                 game.set_dirct("left")
-                root.update()
             elif keycode == 38: #up
                 game.set_dirct("up")
-                root.update()
             elif keycode == 39: #right
                 game.set_dirct("right")
-                root.update()
             elif keycode == 40: #down
                 game.set_dirct("down")
-                root.update()
 
 def spaceHandler(event):
     global state
