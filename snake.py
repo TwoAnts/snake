@@ -244,23 +244,24 @@ def timerHandler():
 
     
 def keyHandler(event):
-    #print "keycode:" + str(event.keycode)
+    #print "keycode:" + str(event.keycode) + " char:" + event.char + " keysym:" + event.keysym + " keysym_num:" + str(event.keysym_num)
     #print "state" + str(event.state)
     #cv.create_rectangle((10,10,30,30), fill = "white")
     keycode = event.keycode
+    keysym = event.keysym
     global selected
     global state
     global isStop
-    if keycode == 27 or keycode == 81: #esc or q 
+    if keysym == "Escape" or keysym == "q": #esc or q 
         root.quit()
     elif state == "select":
-        if keycode == 38 or keycode == 40: #up or down
+        if keysym == "Up" or keysym == "Down": #up or down
             if selected == 0:
                 selected = 1
             else:
                 selected = 0
             drawGameFront(cv)
-        elif keycode == 13:  #enter
+        elif keysym == "Return":  #enter
             if selected == 0:
                 state = "play"
                 isStop = False
@@ -269,13 +270,13 @@ def keyHandler(event):
             elif selected == 1:
                 root.quit()
     elif state == "over":
-        if keycode == 13: #enter
+        if keysym == "Return": #enter
             game.restart()
             drawTitle()
             drawGameFront(cv)
             state = "select"
     else:
-        if keycode == 83: #s
+        if keysym == "s": #s
             if state == "play":
                 state = "stop"
                 isStop = True
@@ -285,13 +286,13 @@ def keyHandler(event):
                 isStop = False
                 drawTitle()
         elif state == "play":
-            if keycode == 37: #left
+            if keysym == "Left": #left
                 game.set_dirct("left")
-            elif keycode == 38: #up
+            elif keysym == "Up": #up
                 game.set_dirct("up")
-            elif keycode == 39: #right
+            elif keysym == "Right": #right
                 game.set_dirct("right")
-            elif keycode == 40: #down
+            elif keysym == "Down": #down
                 game.set_dirct("down")
 
 def spaceHandler(event):
