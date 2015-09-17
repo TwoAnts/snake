@@ -101,7 +101,7 @@ class SnakeGame:
             is_alive = False
             self.is_over = True
             worm_eated = False
-            return MoveResult(is_alive, worm_eated)
+            return MoveResult(is_alive, worm_eated)   
         
         is_alive = True
         worm_eated = False
@@ -239,6 +239,8 @@ def timerHandler():
         secs = 600
         if isAccelerate:
             secs = 100
+        if xMode:
+            secs = 10
         root.after(secs, timerHandler) 
            
 
@@ -274,6 +276,8 @@ def keyHandler(event):
             game.restart()
             drawTitle()
             drawGameFront(cv)
+            isAccelerate = False
+            xMode = False
             state = "select"
     else:
         if keysym == "s": #s
@@ -303,6 +307,15 @@ def spaceHandler(event):
             isAccelerate = False
         else:
             isAccelerate = True
+         
+def xModeHandler(event):
+    global state
+    global xMode
+    if state == "play":
+        if xMode:
+            xMode = False;
+        else:
+            xMode = True;
         
 
 
@@ -315,6 +328,7 @@ if __name__ == "__main__":
     global selected
     global isStop
     global isAccelerate
+    global xMode
 
     game = SnakeGame()
 
@@ -338,11 +352,13 @@ if __name__ == "__main__":
     
     cv.bind_all("<Key>", keyHandler)
     cv.bind_all("<space>", spaceHandler, True)
+    cv.bind_all("x", xModeHandler, True)
 
 
     cv.pack()
             
     isAccelerate = False
+    xMode = False
     isStop = True
     drawTitle()
     drawGameFront(cv)
