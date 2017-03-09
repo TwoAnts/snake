@@ -5,6 +5,15 @@ WIDTH = 600
 UNIT = 20
 BORDER_WIDTH = 10
 
+ALLOW_DIRECTS = ['left',  'left_up',
+'up', 'up_right',
+'right',  'right_down',
+'down', 'down_left',
+]
+
+ALLOW_DIRECT_KEYS = ['Left', 'Up', 'Right', 'Down']
+
+
 class MoveResult:
     def __init__(self, is_alive, worm_eated):
         self.is_alive = is_alive
@@ -66,35 +75,41 @@ class SnakeGame:
         self.worm  = (tindex % self.width, tindex / self.width)
         self.space.remove(tindex)
         
+    def is_dirct_valid(self, dirct):
+        if dirct not in ALLOW_DIRECTS: 
+            return False
+            
+        index = ALLOW_DIRECTS.index(dirct)
+        opposite_direct = ALLOW_DIRECTS[(index + len(ALLOW_DIRECTS)/2)%len(ALLOW_DIRECTS)]
+        if self.snakedirct == opposite_direct: 
+            return False
+        
+        return True
+        
     def set_dirct(self, dirct):
+        print 'set %s' %dirct
         if dirct is None:
             raise ValueError("direct is None!", "in set_dirct")
         if self.dirct_changed or self.snakedirct == dirct:
             return 
-        if dirct == "up" and self.snakedirct == "down":
+        if not self.is_dirct_valid(dirct):
             return
-        if dirct == "down" and self.snakedirct == "up":
-            return
-        if dirct == "left" and self.snakedirct == "right":
-            return
-        if dirct == "right" and self.snakedirct == "left":
-            return
+        
         self.snakedirct = dirct
         self.dirct_changed = True
         
     def move(self):
         dirct = self.snakedirct
         head = self.snakebody[0]
-        if "up" == dirct:
+        if "up" in dirct:
             head = (head[0], head[1] - 1)
-        elif "down" == dirct:
+        if "down" in dirct:
             head = (head[0], head[1] + 1)
-        elif "left" == dirct:
+        if "left" in dirct:
             head = (head[0] - 1, head[1])
-        elif "right" == dirct:
+        if "right" in dirct:
             head = (head[0] + 1, head[1])
-        else:
-            raise ValueError("invalid dirct!", "in move")
+
         self.head = head
         if head[0] >= self.width or head[1] >= self.height \
             or head[0] < 0 or head[1] < 0 or head in self.snakebody:
@@ -177,9 +192,9 @@ def drawPoint(canvas, x, y):
 def drawTitle():
     global root
     if state != "select":
-        root.title("Snake state:[%s] direct:[%s] score:[%d] isAlive:[%s]" %(state, game.snakedirct, game.score, str(result.is_alive)))
+        root.title("Snake(multi_direct) state:[%s] direct:[%s] score:[%d] isAlive:[%s]" %(state, game.snakedirct, game.score, str(result.is_alive)))
     else:
-        root.title("Snake state:[select]")
+        root.title("Snake(multi_direct) state:[select]")
     root.update()
         
     
@@ -242,15 +257,53 @@ def timerHandler():
         if xMode:
             secs = 10
         root.after(secs, timerHandler) 
-           
+        
+def keyPress(event):
+    #global state
+    global key_press_history
+    global key_release_history
+    
+    #if state != 'play': return
+    #if event.keysym not in ALLOW_DIRECT_KEYS: return
+  
+    key_press_history.append(event.keysym)
+    
+    
+
+def keyRelease(event):
+    #global state
+    global key_press_history
+    global key_release_history
+    keysym = event.keysym
+    
+    #if state != 'play': return
+    #if keysym not in ALLOW_DIRECT_KEYS: return
+    
+    key_release_history.append(keysym)
+    key = None
+    if len(key_release_history) == len(key_press_history):
+        if len(key_press_history) == 2:
+            key_press_history.sort(key=lambda x: ALLOW_DIRECT_KEYS.index(x))
+            key = '_'.join(key_press_history)
+            if key == 'Left_Down': key = 'Down_Left'
+        elif len(key_press_history) == 1:
+            key = key_press_history.pop()
+        
+        if key: keyHandler(key)
+        
+        key_press_history[:] = []
+        key_release_history[:] = []
 
     
-def keyHandler(event):
+            
+    
+def keyHandler(key):
     #print "keycode:" + str(event.keycode) + " char:" + event.char + " keysym:" + event.keysym + " keysym_num:" + str(event.keysym_num)
     #print "state" + str(event.state)
     #cv.create_rectangle((10,10,30,30), fill = "white")
-    keycode = event.keycode
-    keysym = event.keysym
+    #keycode = event.keycode
+    keysym = key
+    
     global selected
     global state
     global isStop
@@ -289,15 +342,11 @@ def keyHandler(event):
                 state = "play"
                 isStop = False
                 drawTitle()
-        elif state == "play":
-            if keysym == "Left": #left
-                game.set_dirct("left")
-            elif keysym == "Up": #up
-                game.set_dirct("up")
-            elif keysym == "Right": #right
-                game.set_dirct("right")
-            elif keysym == "Down": #down
-                game.set_dirct("down")
+        elif keysym.lower() in ALLOW_DIRECTS:
+            if state == 'play': game.set_dirct(keysym.lower())
+            
+            
+            
 
 def spaceHandler(event):
     global state
@@ -329,6 +378,10 @@ if __name__ == "__main__":
     global isStop
     global isAccelerate
     global xMode
+    global key_press_history
+    global key_release_history
+    key_press_history = []
+    key_release_history = []
 
     game = SnakeGame()
 
@@ -350,7 +403,9 @@ if __name__ == "__main__":
     cv_overid = []
     
     
-    cv.bind_all("<Key>", keyHandler)
+    cv.bind_all("<KeyPress>", keyPress)
+    cv.bind_all("<KeyRelease>", keyRelease)
+    #cv.bind_all("<Key>", keyHandler)
     cv.bind_all("<space>", spaceHandler, True)
     cv.bind_all("x", xModeHandler, True)
 
