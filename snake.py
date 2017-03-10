@@ -87,7 +87,7 @@ class SnakeGame:
         return True
         
     def set_dirct(self, dirct):
-        print 'set %s' %dirct
+        #print 'set %s' %dirct
         if dirct is None:
             raise ValueError("direct is None!", "in set_dirct")
         if self.dirct_changed or self.snakedirct == dirct:
@@ -265,7 +265,7 @@ def keyPress(event):
     
     #if state != 'play': return
     #if event.keysym not in ALLOW_DIRECT_KEYS: return
-  
+    #print event.keysym + ' press'
     key_press_history.append(event.keysym)
     
     
@@ -275,7 +275,7 @@ def keyRelease(event):
     global key_press_history
     global key_release_history
     keysym = event.keysym
-    
+    #print event.keysym + ' release'
     #if state != 'play': return
     #if keysym not in ALLOW_DIRECT_KEYS: return
     
@@ -302,11 +302,15 @@ def keyHandler(key):
     #print "state" + str(event.state)
     #cv.create_rectangle((10,10,30,30), fill = "white")
     #keycode = event.keycode
+    print key
     keysym = key
     
     global selected
     global state
     global isStop
+    global isAccelerate
+    global xMode
+    
     if keysym == "Escape" or keysym == "q": #esc or q 
         root.quit()
     elif state == "select":
@@ -342,29 +346,20 @@ def keyHandler(key):
                 state = "play"
                 isStop = False
                 drawTitle()
+        elif keysym == "space" and state == "play":
+            if isAccelerate:
+                isAccelerate = False
+            else:
+                isAccelerate = True
+        elif keysym == 'x' and state == "play":
+            if xMode:
+                xMode = False;
+            else:
+                xMode = True;
         elif keysym.lower() in ALLOW_DIRECTS:
             if state == 'play': game.set_dirct(keysym.lower())
             
-            
-            
-
-def spaceHandler(event):
-    global state
-    global isAccelerate
-    if state == "play":
-        if isAccelerate:
-            isAccelerate = False
-        else:
-            isAccelerate = True
-         
-def xModeHandler(event):
-    global state
-    global xMode
-    if state == "play":
-        if xMode:
-            xMode = False;
-        else:
-            xMode = True;
+        
         
 
 
@@ -406,8 +401,8 @@ if __name__ == "__main__":
     cv.bind_all("<KeyPress>", keyPress)
     cv.bind_all("<KeyRelease>", keyRelease)
     #cv.bind_all("<Key>", keyHandler)
-    cv.bind_all("<space>", spaceHandler, True)
-    cv.bind_all("x", xModeHandler, True)
+    #cv.bind_all("<space>", spaceHandler)
+    #cv.bind_all("x", xModeHandler)
 
 
     cv.pack()
