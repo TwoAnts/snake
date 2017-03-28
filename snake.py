@@ -184,11 +184,11 @@ def canvasClear(cv, front = True, game = True, over = True):
         cv_overid[:] = []
       
     
-def drawPoint(canvas, x, y):
+def drawPoint(canvas, x, y, fill="white"):
     tx = BORDER_WIDTH + x * UNIT
     ty = BORDER_WIDTH + y * UNIT
     #print "tx = %d, ty = %d" %(tx, ty)
-    return canvas.create_rectangle((tx, ty, tx + UNIT, ty + UNIT), fill = "white")
+    return canvas.create_rectangle((tx, ty, tx + UNIT, ty + UNIT), fill = fill)
     
 def drawTitle():
     global root
@@ -223,8 +223,10 @@ def drawMainGame(cv, game):
     canvasClear(cv)
     worm = game.worm
     snakebody = game.snakebody
-    cv_gameid.append(drawPoint(cv, worm[0], worm[1]))
-    for (x, y) in snakebody:
+    cv_gameid.append(drawPoint(cv, worm[0], worm[1], fill="#c11447")) #red worm
+    x, y = snakebody[0]
+    cv_gameid.append(drawPoint(cv, x, y, fill="#78a815")) #green snake head
+    for (x, y) in snakebody[1:]:
         cv_gameid.append(drawPoint(cv, x, y))
         
 def drawOver(cv, game):
@@ -303,7 +305,7 @@ def keyHandler(key):
     #print "state" + str(event.state)
     #cv.create_rectangle((10,10,30,30), fill = "white")
     #keycode = event.keycode
-    print key
+    #print key
     keysym = key
     
     global selected
