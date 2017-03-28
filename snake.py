@@ -31,10 +31,11 @@ class SnakeGame:
         self.space = []
         self.snakedirct = 'up'
         self.dirct_changed = False
-        self.worm = ()
         self.__init_snake_body__()
-        self.__first_calcu_space__()
-        self.__make_worm__()
+        self.__calcu_space__()
+        self.worm[:] = []
+        for _ in xrange(self.worm_num):
+            self.__make_worm__()
     
     def __init__(self):
         self.is_over = False
@@ -45,11 +46,20 @@ class SnakeGame:
         self.snakebody = []
         self.__init_snake_body__()
         self.space = []
-        self.__first_calcu_space__()
+        self.__calcu_space__()
         self.snakedirct = 'up'
         self.dirct_changed = False
-        self.worm = ()
-        self.__make_worm__()
+        self.worm = []
+        self.worm_num = 1
+        for _ in xrange(self.worm_num):
+            self.__make_worm__()
+            
+    def set_worm_num(self, worm_num):
+        if self.worm_num != worm_num:
+            self.worm_num = worm_num
+            self.__calcu_space__()
+            for _ in xrange(self.worm_num):
+                self.__make_worm__()
         
     def __init_snake_body__(self):
         rangex = (self.width / 10 * 3 - 1, self.width / 10 * 7 - 1)
@@ -62,7 +72,7 @@ class SnakeGame:
         self.snakebody.append(snakehead)
         self.snakebody.append((snakehead[0], snakehead[1] + 1))
 
-    def __first_calcu_space__(self):
+    def __calcu_space__(self):
         width = self.width
         space = [x for x in range(self.unit_num)]
         for (x, y) in self.snakebody:
@@ -71,9 +81,10 @@ class SnakeGame:
 
     def __make_worm__(self):
         maxindex = len(self.space) - 1
+        if maxindex < 0: return 
         index = randint(0, maxindex)
         tindex = self.space[index]
-        self.worm  = (tindex % self.width, tindex / self.width)
+        self.worm.append((tindex % self.width, tindex / self.width))
         self.space.remove(tindex)
         
     def is_dirct_valid(self, dirct):
@@ -121,7 +132,7 @@ class SnakeGame:
         
         is_alive = True
         worm_eated = False
-        if head == self.worm:
+        if head in self.worm:
             worm_eated = True
         
         if not worm_eated:
@@ -133,6 +144,7 @@ class SnakeGame:
         
         
         if worm_eated:
+            self.worm.remove(head)
             self.__make_worm__()
             self.score += 1
         
@@ -201,6 +213,8 @@ def drawTitle():
     
  
 def drawGameFront(cv):
+    global selected
+    global worm_num
     canvasClear(cv)
     hint = "type <esc> or \'q\' to quit\n\
 type <enter> to confirm\n\
@@ -209,6 +223,8 @@ type \'s\' to stop and resume when play\n\
 type <space> to accelerate when play"
     cv_frontid.append(cv.create_text((200, 480), text = hint, fill = "#888888", font = smallfont)) 
     cv_frontid.append(cv.create_text((310, 250), text = "==SNAKE==", fill = "white", font = bigfont))
+    cv_frontid.append(cv.create_text((480, 400), text = "worms:%s" %worm_num,
+                                        fill = "white", font = font))
     cv_frontid.append(cv.create_text((480, 440), text = "play", fill = "white", font = font))
     cv_frontid.append(cv.create_text((480, 480), text = "quit", fill = "white", font = font))
     if selected == 0:
@@ -223,7 +239,8 @@ def drawMainGame(cv, game):
     canvasClear(cv)
     worm = game.worm
     snakebody = game.snakebody
-    cv_gameid.append(drawPoint(cv, worm[0], worm[1], fill="#c11447")) #red worm
+    for w in worm: 
+        cv_gameid.append(drawPoint(cv, w[0], w[1], fill="#c11447")) #red worm
     x, y = snakebody[0]
     cv_gameid.append(drawPoint(cv, x, y, fill="#78a815")) #green snake head
     for (x, y) in snakebody[1:]:
@@ -269,6 +286,10 @@ def keyPress(event):
     #if state != 'play': return
     #if event.keysym not in ALLOW_DIRECT_KEYS: return
     #print event.keysym + ' press'
+    if event.keysym.startswith(('Shift', 'Control')): return
+    if event.keysym in key_press_history:
+        keyHandler(event.keysym)
+        return
     key_press_history.append(event.keysym)
     
     
@@ -282,11 +303,14 @@ def keyRelease(event):
     #if state != 'play': return
     #if keysym not in ALLOW_DIRECT_KEYS: return
     
+    if event.keysym.startswith(('Shift', 'Control')): return
+    
     key_release_history.append(keysym)
     key = None
     if len(key_release_history) == len(key_press_history):
         if len(key_press_history) == 2:
-            key_press_history.sort(key=lambda x: ALLOW_DIRECT_KEYS.index(x))
+            key_press_history.sort(key=lambda x: ALLOW_DIRECT_KEYS.index(x) \
+                                                          if x in ALLOW_DIRECT_KEYS else x)
             key = '_'.join(key_press_history)
             if key == 'Left_Down': key = 'Down_Left'
         elif len(key_press_history) == 1:
@@ -305,7 +329,7 @@ def keyHandler(key):
     #print "state" + str(event.state)
     #cv.create_rectangle((10,10,30,30), fill = "white")
     #keycode = event.keycode
-    #print key
+    print key
     keysym = key
     
     global selected
@@ -313,11 +337,20 @@ def keyHandler(key):
     global isStop
     global isAccelerate
     global xMode
+    global game
+    global r_count
+    global worm_num
     
     if keysym == "Escape" or keysym == "q": #esc or q 
         root.quit()
     elif state == "select":
-        if keysym == "Up" or keysym == "Down": #up or down
+        if keysym == "plus" or keysym == "equal": #+ will increse worm number.
+            worm_num += 1
+            drawGameFront(cv)
+        elif keysym == "minus" and worm_num > 0:#- will decrese worm number.
+            worm_num -= 1
+            drawGameFront(cv)
+        elif keysym == "Up" or keysym == "Down": #up or down
             if selected == 0:
                 selected = 1
             else:
@@ -325,9 +358,11 @@ def keyHandler(key):
             drawGameFront(cv)
         elif keysym == "Return":  #enter
             if selected == 0:
+                game.set_worm_num(worm_num)
                 state = "play"
                 isStop = False
                 isAccelerate = False
+                xMode = False
                 timerHandler()
             elif selected == 1:
                 root.quit()
@@ -340,6 +375,15 @@ def keyHandler(key):
             xMode = False
             state = "select"
     else:
+        if keysym == "r": #long press 'r' will restart game. 
+            if r_count <= 50: r_count += 1
+            else:
+                r_count = -10
+                game.restart()
+                isStop = False
+                isAccelerate = False
+                xMode = False
+                timerHandler()
         if keysym == "s": #s
             if state == "play":
                 state = "stop"
@@ -378,10 +422,14 @@ if __name__ == "__main__":
     global xMode
     global key_press_history
     global key_release_history
+    global r_count
+    global worm_num
+    r_count = 0
     key_press_history = []
     key_release_history = []
 
     game = SnakeGame()
+    worm_num = game.worm_num
 
     #print game.worm
     #print game.snakebody
@@ -395,6 +443,7 @@ if __name__ == "__main__":
 
     state = "select" #state:select,play,stop,over
     selected = 0  #selected: 0:play 1:quit
+    
 
     cv_frontid = []
     cv_gameid = []
