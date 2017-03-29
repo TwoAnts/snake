@@ -24,19 +24,21 @@ class SnakeGame:
     def xy_index(self, x, y):
         return x + y * self.width
         
-    def restart(self):
+    def start(self):
+        self.__init_snake_body__()
+        self.__calcu_space__()
+        for _ in xrange(self.worm_num):
+            self.__make_worm__()
+    
+    def reset(self):
         self.is_over = False
         self.score = 0
         self.snakebody = []
         self.space = []
         self.snakedirct = 'up'
         self.dirct_changed = False
-        self.__init_snake_body__()
-        self.__calcu_space__()
         self.worm[:] = []
-        for _ in xrange(self.worm_num):
-            self.__make_worm__()
-    
+        
     def __init__(self):
         self.is_over = False
         self.score = 0
@@ -44,22 +46,12 @@ class SnakeGame:
         self.height = HEIGHT / UNIT
         self.unit_num = self.width * self.height
         self.snakebody = []
-        self.__init_snake_body__()
         self.space = []
-        self.__calcu_space__()
         self.snakedirct = 'up'
         self.dirct_changed = False
         self.worm = []
         self.worm_num = 1
-        for _ in xrange(self.worm_num):
-            self.__make_worm__()
             
-    def set_worm_num(self, worm_num):
-        if self.worm_num != worm_num:
-            self.worm_num = worm_num
-            self.__calcu_space__()
-            for _ in xrange(self.worm_num):
-                self.__make_worm__()
         
     def __init_snake_body__(self):
         rangex = (self.width / 10 * 3 - 1, self.width / 10 * 7 - 1)
@@ -329,7 +321,7 @@ def keyHandler(key):
     #print "state" + str(event.state)
     #cv.create_rectangle((10,10,30,30), fill = "white")
     #keycode = event.keycode
-    print key
+    #print key
     keysym = key
     
     global selected
@@ -342,8 +334,14 @@ def keyHandler(key):
     global worm_num
     
     if keysym == "Escape" or keysym == "q": #esc or q 
-        root.quit()
-    elif state == "select":
+        if state == 'select': root.quit()
+        elif state in ('play', 'stop', 'over'): 
+            game.reset()
+            state = 'select'
+            drawGameFront(cv)
+        return
+    
+    if state == "select":
         if keysym == "plus" or keysym == "equal": #+ will increse worm number.
             worm_num += 1
             drawGameFront(cv)
@@ -358,17 +356,18 @@ def keyHandler(key):
             drawGameFront(cv)
         elif keysym == "Return":  #enter
             if selected == 0:
-                game.set_worm_num(worm_num)
                 state = "play"
                 isStop = False
                 isAccelerate = False
                 xMode = False
+                game.worm_num = worm_num
+                game.start()
                 timerHandler()
             elif selected == 1:
                 root.quit()
     elif state == "over":
         if keysym == "Return": #enter
-            game.restart()
+            game.reset()
             drawTitle()
             drawGameFront(cv)
             isAccelerate = False
@@ -379,11 +378,11 @@ def keyHandler(key):
             if r_count <= 50: r_count += 1
             else:
                 r_count = -10
-                game.restart()
+                game.reset()
+                game.start()
                 isStop = False
                 isAccelerate = False
                 xMode = False
-                timerHandler()
         if keysym == "s": #s
             if state == "play":
                 state = "stop"
@@ -438,7 +437,8 @@ if __name__ == "__main__":
     smallfont = tkFont.Font(family='Helvetica', size = 15, weight = "bold")
     font = tkFont.Font(family='Helvetica', size = 20, weight = "bold")
     bigfont = tkFont.Font(family='Helvetica', size = 50, weight = 'bold')
-    cv = Canvas(root, bg = "black", height = 620, width = 620)
+    cv = Canvas(root, bg = "black", height = HEIGHT+2*BORDER_WIDTH, 
+                                    width = WIDTH+2*BORDER_WIDTH)
     
 
     state = "select" #state:select,play,stop,over
