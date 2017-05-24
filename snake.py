@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 #-*- coding: UTF-8 -*-
 from random import randint
-HEIGHT = 600
-WIDTH = 600
+import math
+HEIGHT = 60
+WIDTH = 1000
 UNIT = 20
 BORDER_WIDTH = 10
 
@@ -47,22 +48,29 @@ class SnakeGame:
         self.unit_num = self.width * self.height
         self.snakebody = []
         self.space = []
-        self.snakedirct = 'up'
+        self.snakedirct = 'left'
         self.dirct_changed = False
         self.worm = []
         self.worm_num = 1
             
+    def __range_for_init_snake_body__(self, size):
+        start = int(size * 0.3)
+        end = math.ceil(size * 0.7)
+        if end >= size: end = size - 1 
+        return (start, end)
+        
         
     def __init_snake_body__(self):
-        rangex = (self.width / 10 * 3 - 1, self.width / 10 * 7 - 1)
-        rangey = (self.height / 10 * 3 - 1, self.height / 10 * 7 - 1)
-        if rangey[1] + 1 >= self.height or  rangey[1] - 1 < 0:
-            raise RuntimeError("the height is too small!",
+        rangex = self.__range_for_init_snake_body__(self.width)
+        rangey = self.__range_for_init_snake_body__(self.height)
+        
+        if rangex[1] + 1 >= self.width or  rangex[1] - 1 < 0:
+            raise RuntimeError("the width is too small!",
                                "in __init_snake_bogy__")
         snakehead = (randint(rangex[0], rangex[1]),
                             randint(rangey[0], rangey[1]))
         self.snakebody.append(snakehead)
-        self.snakebody.append((snakehead[0], snakehead[1] + 1))
+        self.snakebody.append((snakehead[0] + 1, snakehead[1]))
 
     def __calcu_space__(self):
         width = self.width
