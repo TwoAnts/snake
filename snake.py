@@ -14,6 +14,32 @@ ALLOW_DIRECTS = ['left',  'left_up',
 
 ALLOW_DIRECT_KEYS = ['Left', 'Up', 'Right', 'Down']
 
+MODE = ('Normal', 'NoWall', 'NeverDie')
+
+class GamePolicy:
+    def __init__(self, game):
+        self.game = game
+    
+    def run(self):
+        return False
+        
+class TruePolicy(GamePolicy):
+    def __init__(self, game):
+        GamePolicy.__init__(self, game)
+        
+    def run(self):
+        return True
+        
+class NoDeathKnockWallPolicy(GamePolicy):
+    def __init__(self, game):
+        GamePolicy.__init__(self, game)
+        
+    def run(self):
+        head_0 = (self.game.head[0] + self.game.width) % self.game.width
+        head_1 = (self.game.head[1] + self.game.height) % self.game.height
+        self.game.head = (head_0, head_1)
+        return True
+
 
 class MoveResult:
     def __init__(self, is_alive, worm_eated):
@@ -40,6 +66,8 @@ class SnakeGame:
         self.worm[:] = []
         
     def __init__(self):
+        self.default_policies = {}
+        self.policies = {}
         self.is_over = False
         self.score = 0
         self.width = WIDTH / UNIT
@@ -102,6 +130,35 @@ class SnakeGame:
         self.snakedirct = dirct
         self.dirct_changed = True
         
+    @property
+    def default_false_policy(self):
+        if not hasattr(self, '__true_policy__'):
+            self.__false_policy__ = GamePolicy(self)
+        return self.__false_policy__
+        
+    def get_default_policy(self, name):
+        if name in self.default_policies:
+            return self.default_policies[name]
+        if name == 'on_knock_wall':
+            self.default_policies[name] = self.default_false_policy
+        elif name == 'on_knock_body':
+            self.default_policies[name] = self.default_false_policy
+        else:
+            return None
+        return self.default_policies[name]
+        
+    def get_policy(self, name):
+        if name not in self.policies:
+            return self.get_default_policy(name)
+        return self.policies[name]
+        
+    def set_policy(self, name, policy):
+        self.policies[name] = policy
+        
+    def del_policy(self, name):
+        if name in self.policies:
+            del self.policies[name]
+        
     def move(self):
         dirct = self.snakedirct
         head = self.snakebody[0]
@@ -115,28 +172,41 @@ class SnakeGame:
             head = (head[0] + 1, head[1])
 
         self.head = head
-        if head[0] >= self.width or head[1] >= self.height \
-            or head[0] < 0 or head[1] < 0 or head in self.snakebody:
-            is_alive = False
-            self.is_over = True
-            worm_eated = False
-            return MoveResult(is_alive, worm_eated)   
+        if (head[0] >= self.width 
+            or head[1] >= self.height
+            or head[0] < 0
+            or head[1] < 0):
+            if not self.get_policy('on_knock_wall').run():
+                is_alive = False
+                self.is_over = True
+                worm_eated = False
+                return MoveResult(is_alive, worm_eated)
+        
+        if head in self.snakebody:
+            if not self.get_policy('on_knock_body').run():
+                is_alive = False
+                self.is_over = True
+                worm_eated = False
+                return MoveResult(is_alive, worm_eated)
+                 
         
         is_alive = True
         worm_eated = False
-        if head in self.worm:
+        if self.head in self.worm:
             worm_eated = True
         
         if not worm_eated:
             tail = self.snakebody.pop()
-            self.space.append(self.xy_index(tail[0], tail[1]))
-            self.space.remove(self.xy_index(head[0], head[1]))
+            if tail not in self.snakebody:                         #avoid head knock body
+                self.space.append(self.xy_index(tail[0], tail[1])) 
+            if self.head not in self.snakebody:                    #avoid head knock body
+                self.space.remove(self.xy_index(self.head[0], self.head[1]))
             
-        self.snakebody.insert(0, head)
+        self.snakebody.insert(0, self.head)
         
         
         if worm_eated:
-            self.worm.remove(head)
+            self.worm.remove(self.head)
             self.__make_worm__()
             self.score += 1
         
@@ -197,7 +267,7 @@ def drawPoint(canvas, x, y, fill="white"):
 def drawTitle():
     global root
     if state != "select":
-        root.title("Snake(multi_direct) state:[%s] direct:[%s] score:[%d] isAlive:[%s]" %(state, game.snakedirct, game.score, str(result.is_alive)))
+        root.title("Snake(multi_direct) %s_%s state:[%s] direct:[%s] score:[%d] isAlive:[%s]" %(worm_num, MODE[mode], state, game.snakedirct, game.score, str(result.is_alive)))
     else:
         root.title("Snake(multi_direct) state:[select]")
     root.update()
@@ -206,10 +276,13 @@ def drawTitle():
  
 def drawGameFront(cv):
     global selected
+    global mode
     global worm_num
     canvasClear(cv)
     hint = "type <esc> or \'q\' to quit\n\
 type <enter> to confirm\n\
+type <tab> to select mode\n\
+type + and - to change worm number\n\
 type <up> or <down> to select\n\
 type \'s\' to stop and resume when play\n\
 type <space> to accelerate when play"
@@ -217,14 +290,15 @@ type <space> to accelerate when play"
     cv_frontid.append(cv.create_text((310, 250), text = "==SNAKE==", fill = "white", font = bigfont))
     cv_frontid.append(cv.create_text((480, 400), text = "worms:%s" %worm_num,
                                         fill = "white", font = font))
-    cv_frontid.append(cv.create_text((480, 440), text = "play", fill = "white", font = font))
-    cv_frontid.append(cv.create_text((480, 480), text = "quit", fill = "white", font = font))
+    cv_frontid.append(cv.create_text((480, 440), text = MODE[mode], fill = "white", font = font))
+    cv_frontid.append(cv.create_text((480, 480), text = "play", fill = "white", font = font))
+    cv_frontid.append(cv.create_text((480, 520), text = "quit", fill = "white", font = font))
     if selected == 0:
         sx = 400
-        sy = 430
+        sy = 470
     else:
         sx = 400
-        sy = 470
+        sy = 510
     cv_frontid.append(cv.create_rectangle((sx, sy, sx + UNIT, sy + UNIT), fill = "white"))
     
 def drawMainGame(cv, game):
@@ -233,10 +307,10 @@ def drawMainGame(cv, game):
     snakebody = game.snakebody
     for w in worm: 
         cv_gameid.append(drawPoint(cv, w[0], w[1], fill="#c11447")) #red worm
-    x, y = snakebody[0]
-    cv_gameid.append(drawPoint(cv, x, y, fill="#78a815")) #green snake head
     for (x, y) in snakebody[1:]:
         cv_gameid.append(drawPoint(cv, x, y))
+    x, y = snakebody[0]
+    cv_gameid.append(drawPoint(cv, x, y, fill="#78a815")) #green snake head
         
 def drawOver(cv, game):
     for id in cv_gameid:
@@ -270,6 +344,9 @@ def timerHandler():
             secs = 10
         root.after(secs, timerHandler) 
         
+def specialInputHandler(event):
+    keyHandler(event.keysym)
+        
 def keyPress(event):
     #global state
     global key_press_history
@@ -295,7 +372,7 @@ def keyRelease(event):
     #if state != 'play': return
     #if keysym not in ALLOW_DIRECT_KEYS: return
     
-    if event.keysym.startswith(('Shift', 'Control')): return
+    if event.keysym.startswith(('Shift', 'Control', 'Tab')): return
     
     key_release_history.append(keysym)
     key = None
@@ -326,12 +403,15 @@ def keyHandler(key):
     
     global selected
     global state
+    global mode
     global isStop
     global isAccelerate
     global xMode
     global game
     global r_count
     global worm_num
+    global noDeathKnockWallPolicy
+    global truePolicy
     
     if keysym == "Escape" or keysym == "q": #esc or q 
         if state == 'select': root.quit()
@@ -342,7 +422,25 @@ def keyHandler(key):
         return
     
     if state == "select":
-        if keysym == "plus" or keysym == "equal": #+ will increse worm number.
+        if keysym == "Tab":
+            mode = (mode + 1) % len(MODE)
+            if mode == MODE.index('NoWall'):
+                if noDeathKnockWallPolicy is None:
+                    noDeathKnockWallPolicy = NoDeathKnockWallPolicy(game)
+                game.set_policy('on_knock_wall', noDeathKnockWallPolicy)
+                game.del_policy('on_knock_body')
+            elif mode == MODE.index('NeverDie'):
+                if noDeathKnockWallPolicy is None:
+                    noDeathKnockWallPolicy = NoDeathKnockWallPolicy(game)
+                game.set_policy('on_knock_wall', noDeathKnockWallPolicy)
+                if truePolicy is None:
+                    truePolicy = TruePolicy(game)
+                game.set_policy('on_knock_body', truePolicy)
+            elif mode == MODE.index('Normal'):
+                game.del_policy('on_knock_wall')
+                game.del_policy('on_knock_body')
+            drawGameFront(cv)
+        elif keysym == "plus" or keysym == "equal": #+ will increse worm number.
             worm_num += 1
             drawGameFront(cv)
         elif keysym == "minus" and worm_num > 0:#- will decrese worm number.
@@ -415,6 +513,9 @@ if __name__ == "__main__":
     global root
     global cv
     global state
+    global mode
+    global noDeathKnockWallPolicy
+    global truePolicy
     global selected
     global isStop
     global isAccelerate
@@ -423,6 +524,9 @@ if __name__ == "__main__":
     global key_release_history
     global r_count
     global worm_num
+    mode = 0
+    noDeathKnockWallPolicy = None
+    truePolicy = None
     r_count = 0
     key_press_history = []
     key_release_history = []
@@ -452,6 +556,7 @@ if __name__ == "__main__":
     
     cv.bind_all("<KeyPress>", keyPress)
     cv.bind_all("<KeyRelease>", keyRelease)
+    cv.bind_all("<Tab>", specialInputHandler)
     #cv.bind_all("<Key>", keyHandler)
     #cv.bind_all("<space>", spaceHandler)
     #cv.bind_all("x", xModeHandler)
