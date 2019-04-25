@@ -1,20 +1,19 @@
-# README #   
-多方向版本，把上下左右四个方向，变成了八个方向。
+# Snake by hzy #   
 
+贪吃蛇改良版  
 
-## Something To Say ##  
+## Features ##  
 
-1.我将 __贪吃蛇__ 本身的游戏逻辑，独立为一个类，只要使用简单方法调用,
-就可以驱动这个游戏和获得游戏的状态
-  
-2.主要使用 __Tkinter.Canvas__ 类
-
-3.写的过程中，为了解决蛇的间歇性前进问题，尝试了许多方法。 
-使用 __threading__ 和 __timer__ ，后来用了一下，发现其他的线程会卡住，效果不理想
-使用`after()`方法，让timerHandler对自己进行间歇性的调用，总算实现了我要的效果。这里是自己调用自己，但不是递归。方法不会阻塞。
+* 你没有玩过的船新版本  
+* 组合方向键实现 __斜向移动__  
+* 支持 __普通__、__穿墙__ 和 __无敌__ 模式( _Tab_ 键)  
+* 空格键切换速度，并支持超快速模式( _x_ 键)  
+* 支持暂停( _s_ 键)  
+* 自定义虫子数量( _+/-_ 键)  
+* 自定义窗口大小。比如，`python snake.py 4`可将画面缩小为1/4  
 
 ## How To Play ##  
-`python snake.py`
+`python snake.py [缩放比例]`  
  
-This game uses `Tkinter` module. It can run on all platforms with python.
+This game uses `Tkinter` module. It can run on all platforms with Python2.x.  
 

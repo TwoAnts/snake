@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 #-*- coding: UTF-8 -*-
 from random import randint
+import sys
+
 HEIGHT = 600
 WIDTH = 600
 UNIT = 20
 BORDER_WIDTH = 10
+SCALE_DIV = 1
 
 ALLOW_DIRECTS = ['left',  'left_up',
 'up', 'up_right',
@@ -271,9 +274,7 @@ def drawTitle():
     else:
         root.title("Snake(multi_direct) state:[select]")
     root.update()
-        
     
- 
 def drawGameFront(cv):
     global selected
     global mode
@@ -286,19 +287,19 @@ type + and - to change worm number\n\
 type <up> or <down> to select\n\
 type \'s\' to stop and resume when play\n\
 type <space> to accelerate when play"
-    cv_frontid.append(cv.create_text((200, 480), text = hint, fill = "#888888", font = smallfont)) 
-    cv_frontid.append(cv.create_text((310, 250), text = "==SNAKE==", fill = "white", font = bigfont))
-    cv_frontid.append(cv.create_text((480, 400), text = "worms:%s" %worm_num,
+    cv_frontid.append(cv.create_text((int_size(200), int_size(480)), text = hint, fill = "#888888", font = smallfont)) 
+    cv_frontid.append(cv.create_text((int_size(310), int_size(250)), text = "==SNAKE==", fill = "white", font = bigfont))
+    cv_frontid.append(cv.create_text((int_size(480), int_size(400)), text = "worms:%s" %worm_num,
                                         fill = "white", font = font))
-    cv_frontid.append(cv.create_text((480, 440), text = MODE[mode], fill = "white", font = font))
-    cv_frontid.append(cv.create_text((480, 480), text = "play", fill = "white", font = font))
-    cv_frontid.append(cv.create_text((480, 520), text = "quit", fill = "white", font = font))
+    cv_frontid.append(cv.create_text((int_size(480), int_size(440)), text = MODE[mode], fill = "white", font = font))
+    cv_frontid.append(cv.create_text((int_size(480), int_size(480)), text = "play", fill = "white", font = font))
+    cv_frontid.append(cv.create_text((int_size(480), int_size(520)), text = "quit", fill = "white", font = font))
     if selected == 0:
-        sx = 400
-        sy = 470
+        sx = int_size(400)
+        sy = int_size(470)
     else:
-        sx = 400
-        sy = 510
+        sx = int_size(400)
+        sy = int_size(510)
     cv_frontid.append(cv.create_rectangle((sx, sy, sx + UNIT, sy + UNIT), fill = "white"))
     
 def drawMainGame(cv, game):
@@ -315,9 +316,9 @@ def drawMainGame(cv, game):
 def drawOver(cv, game):
     for id in cv_gameid:
         cv.itemconfigure(id, fill = "#666666")   #color : gray
-    cv_overid.append(cv.create_text((310,150), text = "score:%d" %game.score, fill = "white", font = font))
-    cv_overid.append(cv.create_text((310,310),  text = "game over", fill = "white", font = bigfont))
-    cv_overid.append(cv.create_text((310, 450), text = "type enter to continue...", fill = "white", font = font))
+    cv_overid.append(cv.create_text((int_size(310), int_size(150)), text = "score:%d" %game.score, fill = "white", font = font))
+    cv_overid.append(cv.create_text((int_size(310), int_size(310)),  text = "game over", fill = "white", font = bigfont))
+    cv_overid.append(cv.create_text((int_size(310), int_size(450)), text = "type enter to continue...", fill = "white", font = font))
     
 def timerHandler():
     global state
@@ -443,7 +444,7 @@ def keyHandler(key):
         elif keysym == "plus" or keysym == "equal": #+ will increse worm number.
             worm_num += 1
             drawGameFront(cv)
-        elif keysym == "minus" and worm_num > 0:#- will decrese worm number.
+        elif keysym == "minus" and worm_num > 1:#- will decrese worm number.
             worm_num -= 1
             drawGameFront(cv)
         elif keysym == "Up" or keysym == "Down": #up or down
@@ -503,9 +504,22 @@ def keyHandler(key):
         elif keysym.lower() in ALLOW_DIRECTS:
             if state == 'play': game.set_dirct(keysym.lower())
             
-        
-        
-
+def scale_update(r):
+    global SCALE_DIV
+    global HEIGHT
+    global WIDTH
+    global UNIT
+    global BORDER_WIDTH
+    SCALE_DIV = r
+    HEIGHT /= r
+    WIDTH /= r
+    UNIT /= r
+    BORDER_WIDTH /= r
+    
+def int_size(v):
+    global SCALE_DIV
+    v //= SCALE_DIV
+    return v or 1
 
 if __name__ == "__main__":
     global game
@@ -530,6 +544,9 @@ if __name__ == "__main__":
     r_count = 0
     key_press_history = []
     key_release_history = []
+    
+    if len(sys.argv) == 2:
+        scale_update(int(sys.argv[1]))
 
     game = SnakeGame()
     worm_num = game.worm_num
@@ -538,9 +555,9 @@ if __name__ == "__main__":
     #print game.snakebody
 
     root = Tk()
-    smallfont = tkFont.Font(family='Helvetica', size = 15, weight = "bold")
-    font = tkFont.Font(family='Helvetica', size = 20, weight = "bold")
-    bigfont = tkFont.Font(family='Helvetica', size = 50, weight = 'bold')
+    smallfont = tkFont.Font(family='Helvetica', size = int_size(15), weight = "bold")
+    font = tkFont.Font(family='Helvetica', size = int_size(20), weight = "bold")
+    bigfont = tkFont.Font(family='Helvetica', size = int_size(50), weight = 'bold')
     cv = Canvas(root, bg = "black", height = HEIGHT+2*BORDER_WIDTH, 
                                     width = WIDTH+2*BORDER_WIDTH)
     
