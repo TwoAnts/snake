@@ -127,8 +127,14 @@ class SnakeGame:
         #print 'set %s' %dirct
         if dirct is None:
             raise ValueError("direct is None!", "in set_dirct")
-        if self.dirct_changed or self.snakedirct == dirct:
+        
+        if self.snakedirct == dirct:
             return 
+        
+        if (self.dirct_changed 
+            and ('_' in self.snakedirct or '_' not in dirct)):
+            return
+        
         if not self.is_dirct_valid(dirct):
             return
         
@@ -374,12 +380,11 @@ def keyPress(event):
     #if event.keysym not in ALLOW_DIRECT_KEYS: return
     #print event.keysym + ' press'
     if event.keysym.startswith(('Shift', 'Control')): return
-    if event.keysym in key_press_history:
-        keyHandler(event.keysym)
-        return
+    #if event.keysym in key_press_history:
+    #    keyHandler(event.keysym)
+    #    return
+    keyHandler(event.keysym)
     key_press_history.append(event.keysym)
-    
-    
 
 def keyRelease(event):
     #global state
@@ -401,7 +406,7 @@ def keyRelease(event):
             key = '_'.join(key_press_history)
             if key == 'Left_Down': key = 'Down_Left'
         elif len(key_press_history) == 1:
-            key = key_press_history.pop()
+            key_press_history.pop()
         
         if key: keyHandler(key)
         
