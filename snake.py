@@ -67,6 +67,7 @@ class SnakeGame:
         self.snakedirct = 'up'
         self.dirct_changed = False
         self.worm[:] = []
+        self.danger_cnt = 0
         
     def __init__(self):
         self.default_policies = {}
@@ -82,6 +83,7 @@ class SnakeGame:
         self.dirct_changed = False
         self.worm = []
         self.worm_num = 1
+        self.danger_cnt = 0
             
         
     def __init_snake_body__(self):
@@ -163,6 +165,8 @@ class SnakeGame:
             del self.policies[name]
         
     def move(self):
+        DANGER_IGNORE = 2
+    
         dirct = self.snakedirct
         head = self.snakebody[0]
         if "up" in dirct:
@@ -180,18 +184,31 @@ class SnakeGame:
             or head[0] < 0
             or head[1] < 0):
             if not self.get_policy('on_knock_wall').run():
-                is_alive = False
-                self.is_over = True
-                worm_eated = False
-                return MoveResult(is_alive, worm_eated)
+                if self.danger_cnt >= DANGER_IGNORE:
+                    is_alive = False
+                    self.is_over = True
+                    worm_eated = False
+                    return MoveResult(is_alive, worm_eated)
+                else:
+                    self.danger_cnt += 1
+                    is_alive = True
+                    worm_eated = False
+                    return MoveResult(is_alive, worm_eated)
         
         if head in self.snakebody:
             if not self.get_policy('on_knock_body').run():
-                is_alive = False
-                self.is_over = True
-                worm_eated = False
-                return MoveResult(is_alive, worm_eated)
-                 
+                if self.danger_cnt >= DANGER_IGNORE:
+                    is_alive = False
+                    self.is_over = True
+                    worm_eated = False
+                    return MoveResult(is_alive, worm_eated)
+                else:
+                    self.danger_cnt += 1
+                    is_alive = True
+                    worm_eated = False
+                    return MoveResult(is_alive, worm_eated)
+        
+        self.danger_cnt = 0
         
         is_alive = True
         worm_eated = False
