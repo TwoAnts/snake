@@ -399,7 +399,7 @@ def keyRelease(event):
     
     key_release_history.append(keysym)
     key = None
-    if len(key_release_history) == len(key_press_history):
+    if len(key_release_history) >= len(key_press_history):
         if len(key_press_history) == 2:
             key_press_history.sort(key=lambda x: ALLOW_DIRECT_KEYS.index(x) \
                                                           if x in ALLOW_DIRECT_KEYS else x)
