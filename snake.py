@@ -384,7 +384,8 @@ def keyPress(event):
     #    keyHandler(event.keysym)
     #    return
     keyHandler(event.keysym)
-    key_press_history.append(event.keysym)
+    if event.keysym not in key_press_history:
+        key_press_history.append(event.keysym)
 
 def keyRelease(event):
     #global state
